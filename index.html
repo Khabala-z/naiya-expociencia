@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Línea OBLIGATORIA para la PWA: enlaza el manifiesto -->
+    <link rel="manifest" href="/manifiesto.json"> 
+    <title>Naiya - La Voz que Une Culturas</title>
+    <!-- Carga de Tailwind CSS para un diseño rápido y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración para usar la fuente Inter y un diseño más suave -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc; /* Fondo suave */
+        }
+        /* Estilo para simular un "botón flotante" de micrófono */
+        #microphoneButton {
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            animation: pulse-shadow 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+        #microphoneButton.recording {
+            background-color: #ef4444; /* Rojo al grabar */
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.7); /* Sombra roja pulsante */
+            animation: none;
+        }
+        @keyframes pulse-shadow {
+            0%, 100% { transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+            50% { transform: scale(1.05); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Contenedor Principal de la App (Simulación de móvil) -->
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 md:p-8 space-y-6">
+        
+        <!-- Encabezado de la App -->
+        <header class="text-center">
+            <h1 class="text-4xl font-extrabold text-indigo-700">Naiya</h1>
+            <p class="text-sm text-gray-500 mt-1">La voz que une culturas</p>
+        </header>
+
+        <!-- Contenedor de Traducción (Resultados) -->
+        <div id="resultsContainer" class="space-y-4 h-64 overflow-y-auto p-3 bg-gray-50 rounded-xl border border-gray-200">
+            <!-- Mensaje de bienvenida inicial -->
+            <div id="initialMessage" class="text-center text-gray-400 p-8">
+                <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2m-6 0h.01"></path></svg>
+                <p>Presiona el micrófono para comenzar una conversación.</p>
+            </div>
+            <!-- Los resultados de la traducción se insertarán aquí -->
+        </div>
+
+        <!-- Selector de Idiomas -->
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-300 shadow-inner">
+            <select id="sourceLang" class="bg-transparent text-lg font-semibold text-gray-700 focus:outline-none focus:ring-0 appearance-none pr-6">
+                <option value="es-ES">Español (ES)</option>
+                <option value="en-US">Inglés (EN)</option>
+                <!-- Aquí podrías añadir lenguas indígenas si tuvieras un modelo específico -->
+                <option value="otro">Lengua Indígena (Simulado)</option>
+            </select>
+            
+            <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+
+            <select id="targetLang" class="bg-transparent text-lg font-semibold text-gray-700 focus:outline-none focus:ring-0 appearance-none pr-6">
+                <option value="en-US">Inglés (EN)</option>
+                <option value="es-ES">Español (ES)</option>
+                <option value="fr-FR">Francés (FR)</option>
+            </select>
+        </div>
+        
+        <!-- Botón de Micrófono (Interacción Principal) -->
+        <div class="flex justify-center mt-6">
+            <button id="microphoneButton" class="w-16 h-16 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-transform" aria-label="Iniciar traducción de voz">
+                <svg id="micIcon" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7v0a7 7 0 01-7-7v0"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18V21"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 21h4"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v4"></path></svg>
+                <svg id="stopIcon" class="w-8 h-8 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9l5 3-5 3V9z"></path></svg>
+            </button>
+        </div>
+
+        <!-- Área de Mensajes de Estado/Error -->
+        <div id="statusMessage" class="text-center text-sm text-red-500 h-4"></div>
+    </div>
+
+    <!-- Script principal de la aplicación -->
+    <script>
+        // Configuración de la API (DEJAR VACÍO - Canvas proporciona la clave en tiempo de ejecución)
+        const API_KEY = ""; 
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=";
+        const MODEL_NAME = "gemini-2.5-flash-preview-05-20";
+
+        // Referencias a elementos del DOM
+        const micButton = document.getElementById('microphoneButton');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const sourceLangSelect = document.getElementById('sourceLang');
+        const targetLangSelect = document.getElementById('targetLang');
+        const statusMessage = document.getElementById('statusMessage');
+        let initialMessage = document.getElementById('initialMessage'); // Usamos 'let' porque se puede eliminar
+
+        // Estado de la aplicación
+        let isRecording = false;
+        let recognition = null;
+
+        // Función de utilidad para manejar el backoff exponencial en llamadas a la API
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        if (response.status === 429 && i < maxRetries - 1) { // 429 Too Many Requests
+                            const delay = Math.pow(2, i) * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                        throw new Error(`Error en la solicitud HTTP: ${response.status} ${response.statusText}`);
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === maxRetries - 1) {
+                        throw error;
+                    }
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+
+        // 1. Funcionalidad de Traducción con Gemini
+        
+        /**
+         * Llama a la API de Gemini para traducir un texto y mostrar el resultado.
+         * @param {string} textToTranslate El texto original capturado por voz.
+         * @param {string} targetLanguage El idioma de destino.
+         */
+        async function translateText(textToTranslate, sourceLanguageCode, targetLanguageCode) {
+            statusMessage.textContent = "⚙️ Procesando traducción con IA...";
+            
+            const sourceLang = sourceLangSelect.options[sourceLangSelect.selectedIndex].text;
+            const targetLang = targetLangSelect.options[targetLangSelect.selectedIndex].text;
+
+            // Prompt que instruye al modelo a comportarse como un traductor inteligente Naiya
+            // Si el idioma es "otro" (simulado), devolvemos el mensaje especial sin llamar a Gemini
+            if (sourceLanguageCode === 'otro') {
+                 displayTranslation(textToTranslate, 'Traducción especial no disponible en este prototipo, pero ¡Naiya lo hará!');
+                 statusMessage.textContent = "✅ Demostración de Lengua Indígena (Simulado)";
+                 return;
+            }
+
+            const systemPrompt = `Actúa como Naiya, un traductor inteligente y sensible. Tu única tarea es traducir el texto del idioma de origen al idioma de destino. El idioma de origen es ${sourceLang} y el idioma de destino es ${targetLang}. La traducción debe ser concisa y clara. NO añadas comentarios ni explicaciones.`;
+            
+            const userQuery = textToTranslate;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            const url = API_URL + API_KEY;
+
+            try {
+                const response = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                const translatedText = result.candidates?.[0]?.content?.parts?.[0]?.text || "Error de traducción.";
+                
+                // Mostrar el resultado traducido
+                displayTranslation(textToTranslate, translatedText);
+
+                statusMessage.textContent = "";
+
+            } catch (error) {
+                console.error("Error en la API de Gemini:", error);
+                statusMessage.textContent = "❌ Error al conectar con la IA de traducción.";
+            }
+        }
+
+        /**
+         * Agrega un mensaje al contenedor de resultados.
+         * @param {string} text El texto a mostrar.
+         * @param {string} language El idioma (ej: "ES", "EN").
+         * @param {boolean} isOriginal Indica si es el texto original o la traducción.
+         */
+        function addMessage(text, language, isOriginal) {
+            if (initialMessage) {
+                initialMessage.remove();
+                initialMessage = null;
+            }
+            
+            const alignment = isOriginal ? 'items-end' : 'items-start';
+            const bgColor = isOriginal ? 'bg-indigo-100 text-indigo-800' : 'bg-green-100 text-green-800';
+            const languageLabel = isOriginal ? language : language;
+
+            const messageHtml = `
+                <div class="flex ${alignment} w-full">
+                    <div class="max-w-[85%] p-3 rounded-xl ${bgColor} shadow-sm">
+                        <p class="font-bold text-xs mb-1">${languageLabel}</p>
+                        <p class="text-base">${text}</p>
+                    </div>
+                </div>
+            `;
+            resultsContainer.insertAdjacentHTML('beforeend', messageHtml);
+            resultsContainer.scrollTop = resultsContainer.scrollHeight; // Scroll al final
+        }
+
+        /**
+         * Muestra el texto original y la traducción.
+         * @param {string} originalText El texto que el usuario dijo.
+         * @param {string} translatedText El resultado de la IA.
+         */
+        function displayTranslation(originalText, translatedText) {
+            const sourceLangCode = sourceLangSelect.value;
+            const targetLangCode = targetLangSelect.value;
+
+            // 1. Mensaje de Texto Original (Derecha)
+            // Manejamos el caso de "otro" para la etiqueta de idioma
+            const sourceLabel = sourceLangCode === 'otro' ? 'IND' : sourceLangCode.split('-')[0].toUpperCase();
+            addMessage(originalText, sourceLabel, true);
+
+            // 2. Mensaje de Traducción (Izquierda)
+            const targetLabel = targetLangCode.split('-')[0].toUpperCase();
+            addMessage(translatedText, targetLabel, false);
+        }
+
+        // 2. Funcionalidad de Reconocimiento de Voz (Web Speech API)
+
+        function startRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                statusMessage.textContent = "❌ Tu navegador no soporta la API de reconocimiento de voz. Usa Chrome o Edge.";
+                return;
+            }
+
+            // Inicializar el objeto de reconocimiento (usando el prefijo si es necesario)
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+
+            // Configuración
+            recognition.continuous = false; // Solo una frase por captura
+            recognition.interimResults = false; // Solo resultados finales
+            
+            // Establecer el idioma de origen
+            const sourceLangCode = sourceLangSelect.value === 'otro' ? 'es-ES' : sourceLangSelect.value;
+            recognition.lang = sourceLangCode; 
+
+            // Manejadores de Eventos
+            
+            recognition.onstart = () => {
+                isRecording = true;
+                micButton.classList.add('recording', 'animate-pulse');
+                micButton.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9l5 3-5 3V9z"></path></svg>`;
+                statusMessage.textContent = "🔴 Escuchando...";
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                micButton.classList.remove('recording', 'animate-pulse');
+                micButton.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7v0a7 7 0 01-7-7v0"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18V21"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 21h4"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v4"></path></svg>`;
+                statusMessage.textContent = "🎤 Detenido. Procesando...";
+            };
+
+            recognition.onresult = (event) => {
+                let transcript = event.results[0][0].transcript;
+                
+                if (transcript) {
+                    const sourceLang = sourceLangSelect.value;
+                    const targetLang = targetLangSelect.value;
+                    
+                    // Llamar a la IA para la traducción y mostrar el resultado
+                    translateText(transcript, sourceLang, targetLang);
+                } else {
+                    statusMessage.textContent = "⚠️ No se detectó ninguna voz.";
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Error de reconocimiento de voz:", event.error);
+                if (event.error === 'not-allowed') {
+                    statusMessage.textContent = "❌ Acceso al micrófono denegado. Asegúrate de permitirlo en la configuración.";
+                } else if (event.error === 'no-speech') {
+                    statusMessage.textContent = "⚠️ No se detectó ninguna voz. Inténtalo de nuevo.";
+                } else {
+                    statusMessage.textContent = `❌ Error en el micrófono: ${event.error}`;
+                }
+                isRecording = false;
+                micButton.classList.remove('recording', 'animate-pulse');
+                micButton.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7v0a7 7 0 01-7-7v0"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18V21"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 21h4"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v4"></path></svg>`;
+            };
+
+            // Iniciar la escucha
+            recognition.start();
+        }
+
+        function stopRecognition() {
+            if (recognition) {
+                recognition.stop();
+                isRecording = false;
+            }
+        }
+
+        // 3. Manejo del Botón de Micrófono
+        micButton.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecognition();
+            } else {
+                startRecognition();
+            }
+        });
+
+        // 4. Inicialización y registro del Service Worker
+        document.addEventListener('DOMContentLoaded', () => {
+            // Asegurarse de que el mensaje inicial esté visible
+            if (resultsContainer.children.length === 0 && initialMessage) {
+                resultsContainer.appendChild(initialMessage);
+            }
+            
+            // Registro del Service Worker para la funcionalidad PWA (Offline)
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('ServiceWorker registrado con éxito:', registration.scope);
+                        })
+                        .catch(err => {
+                            console.error('Fallo al registrar ServiceWorker:', err);
+                        });
+                });
+            }
+        });
+
+    </script>
+</body>
+</html>
